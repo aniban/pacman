@@ -56,8 +56,6 @@ class cell():
             self.dot = True
         self.xlo = int(col*CELW)
         self.ylo = int(TOP+row*CELH)
-        #self.x = int((col+0.5)*CELW)
-        #self.y = int(TOP+(row+0.5)*CELH)
 
 
 # DEFINE GRID & PATH OF CELLS -----------------
@@ -199,7 +197,9 @@ class ghost():
 class player():
     def __init__(self, row, col):
         self.row = row
+        self.row_old = row
         self.col = col
+        self.col_old = col
         self.dirn = 3   # 0:right, 1:up, 2:left, 3:down
         self.turn = 3   # based on key pressed
         self.costumes = [[],[],[],[]]
@@ -233,6 +233,8 @@ class player():
                         self.dirn = 3
     
     def move(self):
+        self.row_old = self.row
+        self.col_old = self.col
         if self.row == 13: # DEAD-END
             if self.col == 1:
                 self.col = 26
@@ -303,22 +305,33 @@ while running:
                 p.turn = 0
             elif event.key == pygame.K_SPACE:
                 initialize_ghosts()
-    
+                                            #blit path
+    grid[p.row][p.col].dot = False   
     for c in path_list:
         if c.dot:
             screen.blit(surf_path_dot,(c.xlo,c.ylo))
         else:
             screen.blit(surf_path_clear,(c.xlo,c.ylo))
-    
-    screen.blit(p.costumes[p.dirn][steps%2],(grid[p.row][p.col].xlo,grid[p.row][p.col].ylo))
-    
+                                            #blit ghosts
     for _ in range(GHOSTS):
         g = gst[_]
         if g.dead:
+            g.chase(14,13)
             screen.blit(costume_eyes,(grid[g.row][g.col].xlo,grid[g.row][g.col].ylo))
         else:
+            g.move()
             screen.blit(g.costumes[g.dirn],(grid[g.row][g.col].xlo,grid[g.row][g.col].ylo))
-    
+            if (g.row == p.row and g.col == p.col) or (g.row == p.row_old and g.col == p.col_old):
+                g.dead = True
+                ghosts_dead += 1
+                if ghosts_dead == GHOSTS:
+                    end_game()
+                    running = False
+                                            #blit pacman
+    p.set_dirn()
+    p.move()
+    screen.blit(p.costumes[p.dirn][steps%2],(grid[p.row][p.col].xlo,grid[p.row][p.col].ylo))
+                                            #blit text
     text_surface_obj = font_obj.render('Current step : '+str(steps), True, (0,255,0), (20,40,20))
     text_rect_obj = text_surface_obj.get_rect()
     text_rect_obj.center = (int(SCRW/2), 50)
@@ -326,30 +339,7 @@ while running:
     
     pygame.display.flip()
     
-    grid[p.row][p.col].dot = False   
-    p.set_dirn()
-    p.move()
-    for _ in range(GHOSTS):
-        g = gst[_]
-        if g.dead:
-            g.chase(14,13)
-        else:
-            g.move()  
-            #if steps%3 != 0: 
-                #g.chase(p.row,p.col)  
-            if g.row == p.row and g.col == p.col:
-                g.dead = True
-                ghosts_dead += 1
-                if ghosts_dead == GHOSTS:
-                    end_game()
-                    running = False
     time.sleep(0.15)    
 
         
 pygame.quit()
-
-
-
-
-
-
